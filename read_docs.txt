@@ -1,0 +1,51 @@
+#--- requirement.txt
+1. Nhóm Data & ML (Cốt lõi xử lý)
+pandas: "Excel phiên bản lập trình". Dùng để thao tác, làm sạch, và gộp các bảng dữ liệu (như cách bạn merge 3 file bệnh nhân/khám/thanh toán).
+
+numpy: Nền tảng tính toán toán học. Pandas xây dựng dựa trên nó. Cực nhanh cho các phép toán vector, ma trận (cần thiết cho Deep Learning).
+
+scikit-learn: "Con dao quân đội". Cung cấp mọi thuật toán ML cổ điển (Random Forest, SVM, KNN) và các công cụ tiền xử lý dữ liệu (Scaling, Encoding).
+
+xgboost: "Vua bảng tính". Mô hình mạnh nhất hiện nay cho dữ liệu dạng bảng (tabular). Cực kỳ hiệu quả cho dự báo chi phí, rủi ro y tế.
+
+imbalanced-learn: Giải quyết bài toán dữ liệu không cân bằng (Ví dụ: Trong 1000 ca khám, chỉ có 5 ca bị từ chối bảo hiểm. Thư viện này giúp bạn cân bằng lại để mô hình không bị "lệch").
+
+joblib: Dùng để lưu (serialize) mô hình đã train xuống file (ví dụ: model.pkl).
+
+2. Nhóm MLflow & DVC (Quản lý dự án)
+mlflow: "Nhật ký hệ thống". Nó lưu lại mọi tham số, độ chính xác của từng lần train mô hình. Giúp bạn so sánh xem bản V1 hay V2 tốt hơn.
+
+dvc: "Git cho dữ liệu". Vì file dữ liệu y tế của bạn quá lớn, Git không quản lý nổi. DVC giúp bạn versioning dữ liệu giống như code.
+
+dvc-s3: Plugin để DVC đẩy dữ liệu lớn của bạn lên Cloud (Amazon S3), giúp team phối hợp làm việc.
+
+3. Nhóm Database & API (Triển khai hệ thống)
+sqlalchemy: Cầu nối giữa code Python và Database (SQL). Bạn không cần viết SQL thô, chỉ cần viết Python để gọi dữ liệu.
+
+fastapi: Framework làm API nhanh nhất hiện nay. Dùng để đưa mô hình của bạn ra thế giới (gọi qua HTTP).
+
+uvicorn: "Máy chủ" để chạy FastAPI. Nó chịu tải cực tốt, phù hợp môi trường production.
+
+pydantic: Công cụ kiểm tra dữ liệu đầu vào (data validation) cho API. Nó đảm bảo nếu ai đó gửi sai định dạng dữ liệu vào, API sẽ báo lỗi ngay lập tức.
+
+4. Nhóm Monitoring & Visualization (Đánh giá)
+evidently: Kiểm tra "độ trôi" của dữ liệu (Data Drift). Ví dụ: Sau 1 tháng, hành vi người bệnh thay đổi, mô hình của bạn bắt đầu dự đoán sai, Evidently sẽ phát hiện ra điều đó.
+
+matplotlib / seaborn: Vẽ biểu đồ. Seaborn đẹp hơn, Matplotlib chi tiết hơn. Dùng để báo cáo kết quả cho cấp trên.
+
+5. Nhóm Notebook & UI (Trải nghiệm)
+jupyter / ipykernel: Môi trường làm việc tương tác để thử nghiệm code và trực quan hóa dữ liệu.
+
+gradio: "Giao diện siêu tốc". Cho phép bạn tạo một web UI chỉ bằng vài dòng code để demo mô hình cho bác sĩ/khách hàng xem mà không cần biết React/Vue.
+
+6. Nhóm Utilities & Testing
+pytest: Framework viết unit test. Đảm bảo code của bạn không bị "lỗi vặt" khi thay đổi.
+
+httpx: Giúp API của bạn gọi đến các dịch vụ khác (microservices) một cách bất đồng bộ (async).
+
+python-dotenv: Quản lý biến môi trường (.env). Giúp giấu các thông tin nhạy cảm (như mật khẩu Database, API Keys) ra khỏi code.
+
+
+#---
+
+#---
