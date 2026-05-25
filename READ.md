@@ -593,3 +593,142 @@ Deployment: Cập nhật container trên server (ví dụ: SSH vào server để
 Model Transition: Tự động chuyển trạng thái mô hình trên MLflow từ Staging sang Production nếu tất cả các bài kiểm tra đều đạt yêu cầu.
 
 Khi nào chạy: Chỉ khi file ci.yaml đã chạy thành công và code đã được merge vào nhánh chính.
+
+--- api-deployment, api-service
+Hai file YAML bạn vừa gửi chính là nền tảng để triển khai (deploy) ứng dụng của bạn lên Kubernetes (K8s). Đây là cách "đóng gói" và "phân phối" ứng dụng cực kỳ mạnh mẽ cho môi trường Production.
+
+Dưới đây là ý nghĩa chi tiết của từng thành phần:
+
+1. Deployment (healthcare-api)
+   Đây là "người quản lý" số lượng ứng dụng của bạn.
+
+replicas: 2: Bạn yêu cầu Kubernetes luôn luôn duy trì 2 bản sao (pod) của API đang chạy. Nếu 1 pod bị treo, K8s sẽ tự động giết nó và tạo pod mới để đảm bảo con số là 2.
+
+image: ...amazonaws.com/...:latest: Đây là đường dẫn đến hình ảnh Docker của bạn đã được đẩy lên Amazon ECR.
+
+containerPort: 8000: Cổng mà ứng dụng FastAPI của bạn đang lắng nghe bên trong container.
+
+2. Service (healthcare-api-service)
+   Đây là "bộ định tuyến" (router) giúp người dùng bên ngoài tìm thấy ứng dụng của bạn.
+
+type: LoadBalancer: Đây là chìa khóa. Nó ra lệnh cho AWS (hoặc cloud provider) tạo một Elastic Load Balancer (ELB). ELB này sẽ cung cấp cho bạn một địa chỉ IP công cộng (Public IP) để truy cập qua Internet.
+
+selector: app: healthcare-api: Đây là sợi dây kết nối. Service sẽ tìm kiếm bất kỳ pod nào có nhãn app: healthcare-api (khớp với Deployment) để gửi yêu cầu đến đó.
+
+port: 80 & targetPort: 8000: Người dùng truy cập vào cổng 80 (cổng tiêu chuẩn của web), Service sẽ tự động chuyển tiếp (forward) yêu cầu đó vào cổng 8000 của container.
+
+Tại sao kiến trúc này lại hiệu quả?
+Tính sẵn sàng cao (High Availability): Vì có 2 replicas, nếu bạn cập nhật phiên bản mới, hệ thống sẽ thực hiện kiểu "Rolling Update" (thay thế dần từng pod một), giúp người dùng không bao giờ bị gián đoạn dịch vụ.
+
+Cân bằng tải: LoadBalancer sẽ tự động phân chia lưu lượng truy cập giữa 2 bản sao đó, giúp hệ thống không bị quá tải ở một chỗ.
+
+Tách biệt: Bạn có thể thay đổi số lượng container (tăng từ 2 lên 5) mà không cần chạm vào Service.
+
+--- gradio-deployment gradio-service
+Việc bạn triển khai thêm healthcare-gradio bên cạnh healthcare-api là một bước đi rất chuyên nghiệp. Điều này cho thấy bạn đang áp dụng kiến trúc Microservices: tách biệt phần Backend xử lý logic (API) và phần Frontend để người dùng tương tác (Gradio UI).
+
+Phân tích cấu hình Gradio của bạn:
+containerPort: 7860: Đây là cổng mặc định của Gradio. Việc bạn định nghĩa đúng cổng này trong Deployment là rất quan trọng để Kubernetes có thể kết nối tới ứng dụng.
+
+targetPort: 7860: Trong Service, việc map port 80 (bên ngoài) vào targetPort 7860 (bên trong) giúp người dùng truy cập giao diện web qua trình duyệt một cách bình thường mà không cần gõ thêm số cổng.
+
+Các lưu ý để hệ thống vận hành trơn tru:
+Giao tiếp giữa Gradio và API:
+
+Vì cả hai đều nằm trong cùng một Cluster, bạn không nên gọi API qua localhost.
+
+Hãy cấu hình Gradio để gọi tới Service của API thông qua tên DNS nội bộ của Kubernetes: http://healthcare-api-service (thay vì IP công cộng). Điều này giúp hệ thống chạy nhanh hơn và bảo mật hơn vì không cần đi ra ngoài Internet.
+
+Quản lý tài nguyên:
+
+Cả hai đều có LoadBalancer. Nếu bạn triển khai trên AWS (EKS), mỗi LoadBalancer sẽ tạo ra một bộ cân bằng tải (ELB) riêng và sẽ tốn phí hàng tháng.
+
+Gợi ý: Để tiết kiệm, bạn có thể cân nhắc sử dụng Ingress Controller (như NGINX Ingress) để dùng chung 1 LoadBalancer cho cả hai dịch vụ (ví dụ: api.domain.com và gradio.domain.com).
+
+Chiến lược CI/CD cho cả hai:
+
+Vì giờ bạn đã có 2 bộ file YAML, trong cd.yaml của bạn nên có logic để cập nhật cho cả hai Deployment.
+
+--- ci.yaml
+Đây là file cấu hình cho GitHub Actions, đóng vai trò là "cảnh sát tự động" kiểm tra code của bạn mỗi khi có thay đổi. Nó đảm bảo mọi thay đổi không làm hỏng ứng dụng hoặc mô hình ML của bạn.
+
+Dưới đây là phân tích chi tiết từng phần:
+
+1. Kích hoạt Pipeline (on)
+   push: branches: [""]: Pipeline sẽ tự động chạy bất cứ khi nào bạn đẩy code lên bất kỳ nhánh nào (rất hữu ích để phát hiện lỗi sớm khi đang code tính năng).
+
+pull_request: branches: [main]: Nếu bạn muốn gộp code vào nhánh main, hệ thống sẽ yêu cầu chạy pipeline này để kiểm tra lần cuối. Nếu test fail, bạn không thể merge được (đảm bảo code "sạch").
+
+2. Thiết lập môi trường (jobs, runs-on)
+   Nó thuê một máy tính ảo từ GitHub (hệ điều hành ubuntu-latest) để chạy các lệnh của bạn.
+
+3. Các bước thực thi (steps)
+   Checkout repository: Tải mã nguồn của bạn từ GitHub xuống máy ảo.
+
+Set up Python: Cài đặt môi trường Python 3.11.
+
+Install dependencies: Cài đặt thư viện cần thiết. Chú ý dòng dvc[s3] và awscli – đây là cách bạn chuẩn bị để làm việc với mô hình dữ liệu lớn trên AWS.
+
+Configure AWS credentials: Sử dụng các "bí mật" (secrets) bạn đã lưu trong GitHub để xác thực danh tính với AWS, cho phép máy ảo truy cập vào S3 bucket.
+
+Debug AWS access: Bước này rất quan trọng. Nó kiểm tra xem kết nối AWS có ổn không bằng cách liệt kê danh sách file trong S3. Nếu bước này báo lỗi, nghĩa là AWS_ACCESS_KEY_ID hoặc AWS_SECRET_ACCESS_KEY của bạn đang bị sai hoặc thiếu quyền truy cập.
+
+Pull DVC artifacts: Lệnh này lấy các file mô hình/dữ liệu thực tế từ S3 về máy ảo thông qua DVC. Vì file mô hình thường quá nặng để đẩy lên GitHub, nên ta dùng DVC để quản lý (giống Git nhưng cho dữ liệu lớn).
+
+4. Kiểm thử (Testing)
+   Sau khi đã có code và mô hình (nhờ DVC), nó chạy 3 bộ test chuyên biệt:
+
+Run API tests: Kiểm tra xem các endpoint /predict, /monitor có hoạt động đúng logic không.
+
+Run feature schema tests: Đảm bảo dữ liệu đầu vào luôn khớp với cấu trúc Pydantic đã định nghĩa.
+
+Run model artifact tests: Kiểm tra xem mô hình load lên có đúng phiên bản và đúng các tham số mong đợi không.
+
+Tóm tắt ý nghĩa
+File này giúp bạn thực hiện nguyên lý Tích hợp liên tục (CI):
+
+Tự động hóa: Bạn không bao giờ phải chạy lệnh pytest thủ công.
+
+Đồng bộ: Đảm bảo môi trường chạy test trên GitHub giống hệt môi trường bạn mong muốn trên server.
+
+Tin cậy: Nếu bất kỳ bước nào (cài đặt, tải dữ liệu, hoặc test) bị lỗi, GitHub sẽ gửi email/thông báo ngay, giúp bạn sửa lỗi trước khi lỗi đó rơi vào tay người dùng.
+
+--- cd.yaml
+Đây là một file cấu hình CD Pipeline (Continuous Deployment) hoàn chỉnh và rất chuyên nghiệp. Nó tự động hóa toàn bộ quá trình từ khi bạn có code đã qua kiểm duyệt cho đến khi nó chạy thực tế trên hạ tầng đám mây.
+
+Dưới đây là giải thích từng thành phần quan trọng trong "dòng chảy" này:
+
+1. Cơ chế kích hoạt (on: workflow_run)
+   Khác với CI chạy khi bạn push, CD này chạy dựa trên kết quả của CI:
+
+workflows: ["CI Pipeline"]: Nó "lắng nghe" xem CI đã chạy xong chưa.
+
+if: ${{ github.event.workflow_run.conclusion == 'success' }}: Đây là chốt chặn quan trọng. CD chỉ chạy nếu CI thành công. Nếu các bài test (pytest) của bạn bị fail, quá trình triển khai sẽ không bao giờ bắt đầu, đảm bảo code lỗi không bao giờ tới tay người dùng.
+
+2. Bảo mật bằng OIDC (permissions)
+   id-token: write: Thay vì sử dụng AWS_ACCESS_KEY_ID dạng chuỗi (dễ bị lộ), bạn đang dùng IAM Roles for Service Accounts (IRSA). GitHub sẽ yêu cầu AWS cấp một "tấm thẻ căn cước" tạm thời (token) để thực hiện các thao tác, cực kỳ an toàn.
+
+3. Quy trình Build & Push (Docker)
+   Pipeline thực hiện các bước cho cả healthcare-api và healthcare-gradio:
+
+Build: Đóng gói ứng dụng thành Docker Image.
+
+Tag: Đánh dấu bằng IMAGE_TAG (chính là mã commit github.sha). Việc dùng mã commit giúp bạn biết chính xác phiên bản nào đang chạy trên server.
+
+Push: Đẩy image lên kho lưu trữ Amazon ECR.
+
+4. Triển khai lên Kubernetes (EKS)
+   Đây là giai đoạn ứng dụng "lên sóng":
+
+Update kubeconfig: Cấu hình quyền truy cập để máy ảo có thể ra lệnh cho cụm Kubernetes (EKS).
+
+Sed (Thay thế): Đây là thủ thuật thông minh. Lệnh sed sẽ tự động tìm kiếm trong file .yaml của bạn, thay thế chữ latest bằng mã commit mới. Nhờ đó, Kubernetes sẽ biết nó cần kéo đúng phiên bản code vừa được build thay vì chạy lại bản cũ.
+
+Rollout status: Đây là bước kiểm tra sức khỏe. Nó sẽ đợi cho đến khi 2 pod của API và 1 pod của Gradio khởi động thành công. Nếu ứng dụng mới bị crash, lệnh này sẽ báo lỗi và ngăn quy trình kết thúc thành công.
+
+Điểm nhấn chuyên nghiệp trong file của bạn:
+Dùng github.sha: Đây là best practice. Nếu lỗi xảy ra, bạn nhìn vào image tag là biết ngay code đang chạy là bản sửa đổi nào.
+
+Triển khai song song: Bạn build và push cho cả API và Gradio trong cùng một luồng, đảm bảo hệ thống luôn đồng bộ.
+
+Rollout status: Việc này ngăn chặn tình trạng triển khai lỗi mà hệ thống không biết (vốn rất nguy hiểm trong thực tế).

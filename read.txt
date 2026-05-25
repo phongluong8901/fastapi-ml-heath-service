@@ -73,9 +73,9 @@ ml flow ui
 git add
 git commit -m "123"
 
-git checkout -b before_finish
+git checkout -b finish
 git branch
-git push origin -u before_finish
+git push origin -u finish
 
 #--- more
 python -m src.training_pipeline --model claim
@@ -137,6 +137,16 @@ kubectl apply -f k8s/
 kubectl get deployments
 kubectl get pods
 kubectl get svc
+
+-- createing s3 bucket
+
+-- configuring dvc remote on s3
+
+-- EKS cluster
+
+-- k8s file for deploy
+
+-- cd len Kubernetes server - k8s
 
 #--- test
 
