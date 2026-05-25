@@ -7,6 +7,8 @@ python -m venv .venv
 -- 
 uv install -r requirements.txt
 
+uv pip show mlflow
+
 #--- run
 
 #--- docker
@@ -15,3 +17,16 @@ uv install -r requirements.txt
 
 #--- ci/cd
 
+#--- mlflow
+ml flow ui
+
+#--- git
+git add
+git commit -m "123"
+
+git checkout -b "25-05-2026"
+git branch
+git push origin -b "25-05-2026"
+
+#--- more
+python -m src.training_pipeline --model claim

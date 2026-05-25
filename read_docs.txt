@@ -1,3 +1,5 @@
+https://github.com/rahulsahay19/healthcare-ai-ml-pipeline
+
 #--- requirement.txt
 1. Nhóm Data & ML (Cốt lõi xử lý)
 pandas: "Excel phiên bản lập trình". Dùng để thao tác, làm sạch, và gộp các bảng dữ liệu (như cách bạn merge 3 file bệnh nhân/khám/thanh toán).
