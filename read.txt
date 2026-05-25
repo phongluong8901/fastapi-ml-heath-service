@@ -9,11 +9,27 @@ uv install -r requirements.txt
 
 uv pip show mlflow
 
+-- dvc
+dvc --version
+dvc init
+
+git rm -r --cached "outputs/model_table.csv"
+git commit -m "stop tracking outputs/model_table.csv in git"
+dvc add "outputs/model_table.csv"
+
+--
+git add "outputs/model_table.csv.dvc" .gitignore
+git commit -m "add model_table.csv to dvc"
+
+-- ping
+ping github.com
+
 #--- run
 
 #--- docker
 
 #--- cmd/bash/terminal
+
 
 #--- ci/cd
 
@@ -26,7 +42,7 @@ git commit -m "123"
 
 git checkout -b "25-05-2026"
 git branch
-git push origin -b "25-05-2026"
+git push origin -u "25-05-2026"
 
 #--- more
 python -m src.training_pipeline --model claim
