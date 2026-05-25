@@ -261,3 +261,27 @@ Tính tự động hóa cao: Từ việc huấn luyện đến việc chuyển m
 Tính minh bạch: Mọi dự báo đều được log lại kèm theo input_hash và model_version.
 
 ## Tính linh hoạt: Bạn có thể dễ dàng quản lý nhiều bài toán khác nhau (risk, claim) chỉ với một file pipeline duy nhất.
+
+---
+
+1. Dự đoán điểm rủi ro (Risk Score Prediction)
+   Mục tiêu: Đánh giá mức độ rủi ro sức khỏe của một bệnh nhân.
+
+Đầu vào (Features): Dựa trên dữ liệu hồ sơ như: độ tuổi, giới tính, tiền sử bệnh (chronic_flag), chuyên khoa thăm khám (department), tần suất đi khám, v.v.
+
+ML model: Đây là bài toán Phân loại (Classification) hoặc Hồi quy (Regression).
+
+Hệ thống sẽ tính toán xem bệnh nhân này thuộc nhóm "Rủi ro thấp", "Rủi ro trung bình" hay "Rủi ro cao".
+
+Ứng dụng thực tế: Giúp công ty bảo hiểm ưu tiên chăm sóc khách hàng có rủi ro cao hoặc điều chỉnh phí bảo hiểm phù hợp.
+
+2. Dự đoán trạng thái yêu cầu bồi thường (Claim Status Prediction)
+   Mục tiêu: Dự đoán xem một "yêu cầu thanh toán bảo hiểm" (Insurance Claim) của bệnh nhân có khả năng bị Chấp nhận (Approved) hay Từ chối (Rejected).
+
+Đầu vào (Features): Dữ liệu chi tiết về lần khám: số tiền viện phí (billed_amount), loại hình thăm khám (ER, Outpatient), lịch sử từ chối của nhà cung cấp (provider_rejection_rate), v.v.
+
+ML model: Đây là bài toán Phân loại nhị phân (Binary Classification).
+
+Mô hình học từ các dữ liệu lịch sử để phát hiện các trường hợp gian lận hoặc sai sót trong hồ sơ bồi thường.
+
+Ứng dụng thực tế: Tự động hóa quá trình phê duyệt bồi thường, giảm thiểu gian lận bảo hiểm và tiết kiệm thời gian cho nhân viên xử lý hồ sơ.
