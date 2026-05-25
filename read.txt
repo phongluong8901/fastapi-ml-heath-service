@@ -21,17 +21,50 @@ dvc add "outputs/model_table.csv"
 git add "outputs/model_table.csv.dvc" .gitignore
 git commit -m "add model_table.csv to dvc"
 
+-- cau hinh lai dc duong dan
+dvc remote add -d localstore ./dvc-storage
+
+--
+dvc add models/
+
+-- day len Cloud
+dvc push
+dvc pull
+
+--Creating Risk Pipeline
+dvc stage add -n train_risk -d src -d outputs/model_table.csv -o models/risk_model_complete_pipeline.joblib -o outputs/feature_schema.json python -m src.training_pipeline --model risk --force
+
+--Creating Claim Pipeline
+uv run dvc stage add -n train_claim -d src -d outputs/model_table.csv -d outputs/feature_schema.json -o models/claim_model_complete_pipeline.joblib python -m src.training_pipeline --model claim
+
+-- sinh du lieu, chi chay dc khi mo server mlflow
+dvc repro
+
+--dvc dag
+
+--
+dvc checkout
+
 -- ping
 ping github.com
 
 #--- run
+--terminal 1 - server fastapi
+py -m uvicorn api.main:app --reload
+
+-- terminal 2 - chay sever mlflow
+mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root ./mlruns --host 127.0.0.1 --port 5000
+
+--terminal 3 - gradio ui
+py ui/gradio_app.py
 
 #--- docker
+docker compose up -d
 
 #--- cmd/bash/terminal
 
 
-#--- ci/cd
+
 
 #--- mlflow
 ml flow ui
@@ -46,3 +79,66 @@ git push origin -u "25-05-2026"
 
 #--- more
 python -m src.training_pipeline --model claim
+
+--docs
+http://127.0.0.1:8000/docs#/
+
+-- gradio
+http://127.0.0.1:7860/
+
+-- mlflow
+http://127.0.0.1:5000/
+
+#--- aws
+-- cloudshell
+aws ecr create-repository --repository-name healthcare-api --region us-east-1
+
+--> setup IAM policy cho user
+
+-- login aws ecr
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <account-id>.dkr.ecr.us-east-1.amazonaws.com
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 260597895391.dkr.ecr.us-east-1.amazonaws.com
+
+-- docker push
+docker push 260597895391.dkr.ecr.us-east-1.amazonaws.com/healthcare-api:latest
+docker push 260597895391.dkr.ecr.us-east-1.amazonaws.com/healthcare-gradio:latest
+
+-- DVC Remote(S3) Configuration: Make sure to add the AmazonS3FullAccess in Users --> for S3
+dvc remote add -d myremote s3://amzn-s3-healthcare/dvc-store
+dvc remote list
+dvc status
+dvc push
+
+-- setup eks
+choco install eksctl -y
+# Setting the variables
+export AWS_REGION=us-east-1
+export CLUSTER_NAME=healthcare-eks
+export ECR_REGISTRY=260597895391.dkr.ecr.us-east-1.amazonaws.com
+# add policies to the user 
+ AmazonEKSClusterPolicy
+AmazonEKSServicePolicy
+AmazonEKSWorkerNodePolicy
+AmazonEC2ContainerRegistryReadOnly
+AdministratorAccess # Otherwise use only this
+# Creating the EKS Cluster
+eksctl create cluster --name healthcare-eks --region us-east-1 --nodes 2 --node-type t3.medium --managed
+# verify the cluster
+eksctl get cluster --region us-east-1
+# Configure kubeconfig
+aws eks update-kubeconfig --region us-east-1 --name healthcare-eks
+# Verify Kubernetes connectivity
+kubectl get nodes
+kubectl get pods -A
+
+-- deploy k8s
+kubectl apply -f k8s/
+#then verify
+kubectl get deployments
+kubectl get pods
+kubectl get svc
+
+#--- test
+
+
+#--- ci/cd
