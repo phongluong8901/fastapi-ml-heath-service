@@ -73,9 +73,9 @@ ml flow ui
 git add
 git commit -m "123"
 
-git checkout -b "25-05-2026"
+git checkout -b before_finish
 git branch
-git push origin -u "25-05-2026"
+git push origin -u before_finish
 
 #--- more
 python -m src.training_pipeline --model claim
